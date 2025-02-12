@@ -4,10 +4,6 @@
 <dict>
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
-	<key>UIBackgroundModes</key>
-	<array>
-		<string>audio</string>
-	</array>
 	<key>CFBundleDisplayName</key>
 	<string>Quick Start</string>
 	<key>CFBundleExecutable</key>
@@ -57,11 +53,9 @@
 <array>
     <string>audio</string>
     <string>external-playback</string>
+	<string>video</string>
 </array>
 <key>AVKitAllowsPictureInPicturePlayback</key>
 <true/>
-<key>UIApplicationExitsOnSuspend</key>
-<false/>
-
 </dict>
 </plist>

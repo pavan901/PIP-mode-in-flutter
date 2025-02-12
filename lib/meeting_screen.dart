@@ -37,7 +37,7 @@ class _MeetingScreenState extends State<MeetingScreen>
 
     // Create room
     _room = VideoSDK.createRoom(
-        roomId: widget.meetingId,
+        roomId: "1j2a-uap5-w285",
         token: widget.token,
         displayName: "John Doe",
         micEnabled: micEnabled,

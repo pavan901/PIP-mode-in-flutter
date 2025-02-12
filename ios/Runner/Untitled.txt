@@ -1,5 +1,3 @@
-// black screen
-
 import UIKit
 import AVFoundation
 import AVKit
@@ -207,38 +205,22 @@ extension PictureInPictureManager: AVPictureInPictureControllerDelegate {
     }
     
     func enqueueVideoFrame(_ frame: RTCVideoFrame) {
-        print("Received video frame for PiP")
-        
-        // Convert RTC frame to CMSampleBuffer
-        guard let sampleBuffer = convertRTCFrameToSampleBuffer(frame) else {
-            print("Failed to convert RTCVideoFrame to CMSampleBuffer")
-            return
+            print("Received video frame for PiP")
+//            guard isPiPActive else {
+//                print("PiP is not active, dropping frame")
+//                return
+//            }
+            
+            guard let sampleBuffer = convertRTCFrameToSampleBuffer(frame) else {
+                print("Failed to convert RTCVideoFrame to CMSampleBuffer")
+                return
+            }
+            
+            DispatchQueue.main.async { [weak self] in
+                print("Enqueuing video frame into SampleBufferDisplayLayer")
+                self?.sampleBufferDisplayLayer?.enqueue(sampleBuffer)
+            }
         }
-        
-        // Log the details of the sample buffer
-        print("Successfully converted RTCVideoFrame to CMSampleBuffer")
-        
-        // Ensure display layer is valid and ready
-        guard let displayLayer = sampleBufferDisplayLayer else {
-            print("SampleBufferDisplayLayer is not initialized")
-            return
-        }
-
-        if displayLayer.status == .failed {
-            print("Display layer is in a failed state.")
-            return
-        }
-
-        // Log the status of the display layer before enqueuing
-        print("Enqueuing sample buffer into SampleBufferDisplayLayer")
-
-        // Enqueue the sample buffer into the display layer
-        DispatchQueue.main.async { [weak self] in
-            print("Enqueuing sample buffer into display layer on main thread")
-            self?.sampleBufferDisplayLayer?.enqueue(sampleBuffer)
-        }
-    }
-
     
     private func convertRTCFrameToSampleBuffer(_ frame: RTCVideoFrame) -> CMSampleBuffer? {
             print("Converting RTCVideoFrame to CMSampleBuffer")
@@ -295,17 +277,19 @@ class WebRTCFrameProcessor: VideoProcessor {
     }
     
     public override func onFrameReceived(_ frame: RTCVideoFrame) -> RTCVideoFrame? {
-        queue.async { [weak self] in
-            if let pixelBuffer = frame.buffer.toPixelBuffer(),
-               let sampleBuffer = pixelBuffer.toCMSampleBuffer(),
-               let displayLayer = self?.sampleBufferDisplayLayer,
-               displayLayer.status != .failed {
-                
-                DispatchQueue.main.async {
-                    PictureInPictureManager.shared.enqueueVideoFrame(frame)
-                }
-            }
-        }
+//        queue.async { [weak self] in
+//            if let pixelBuffer = frame.buffer.toPixelBuffer(),
+//               let sampleBuffer = pixelBuffer.toCMSampleBuffer(),
+//               let displayLayer = self?.sampleBufferDisplayLayer,
+//               displayLayer.status != .failed {
+//
+//                DispatchQueue.main.async {
+//                    PiPHandler.shared.enqueueVideoFrame(frame)
+//                }
+//            }
+//        }
+        
+        PictureInPictureManager.shared.enqueueVideoFrame(frame)
         return frame
     }
 }
@@ -342,196 +326,3 @@ extension CVPixelBuffer {
         return sampleBuffer
     }
 }
-
-
-// vertical video
-
-//import Foundation
-//import AVFoundation
-//import CoreMedia
-//import VideoToolbox
-//import videosdk_webrtc
-//import AVKit
-//
-//class PiPHandler: NSObject, AVPictureInPictureSampleBufferPlaybackDelegate, AVPictureInPictureControllerDelegate {
-//
-//    static let shared = PiPHandler()
-//    
-//    private var pipController: AVPictureInPictureController?
-//    private var sampleBufferDisplayLayer: AVSampleBufferDisplayLayer?
-//    private var isPiPActive = false
-//    
-//    private override init() {
-//        super.init()
-//        setupSampleBufferDisplayLayer()
-//    }
-//    
-//    private func setupSampleBufferDisplayLayer() {
-//        print("Initializing SampleBufferDisplayLayer")
-//        sampleBufferDisplayLayer = AVSampleBufferDisplayLayer()
-//        sampleBufferDisplayLayer?.videoGravity = .resizeAspect
-//        sampleBufferDisplayLayer?.isOpaque = true
-//        
-//        // Ensure it is added to the main window
-//        if let layer = sampleBufferDisplayLayer {
-//            DispatchQueue.main.async {
-//                if let window = UIApplication.shared.windows.first {
-//                    layer.frame = window.bounds
-//                    window.layer.addSublayer(layer)
-//                    print("SampleBufferDisplayLayer added to the window")
-//                } else {
-//                    print("Failed to get the main window")
-//                }
-//            }
-//        }
-//    }
-//    
-//    // MARK: - Public Methods
-//    func startPiP() {
-//        print("Entering startPiP()")
-//        guard !isPiPActive else {
-//            print("PiP is already active")
-//            return
-//        }
-//        
-//        DispatchQueue.main.async { [weak self] in
-//            guard let self = self else {
-//                print("self is nil in startPiP()")
-//                return
-//            }
-//            
-//            print("Checking PiP support: \(AVPictureInPictureController.isPictureInPictureSupported())")
-//            
-//            guard AVPictureInPictureController.isPictureInPictureSupported(),
-//                  let displayLayer = self.sampleBufferDisplayLayer else {
-//                print("PiP not supported or display layer is nil")
-//                return
-//            }
-//            
-//            let contentSource = AVPictureInPictureController.ContentSource(
-//                sampleBufferDisplayLayer: displayLayer,
-//                playbackDelegate: self
-//            )
-//            
-//            self.pipController = AVPictureInPictureController(contentSource: contentSource)
-//            self.pipController?.delegate = self
-//            self.pipController?.startPictureInPicture()
-//            self.isPiPActive = true
-//            print("Started PiP successfully")
-//        }
-//    }
-//    
-//    func stopPiP() {
-//        print("Stopping PiP")
-//        DispatchQueue.main.async { [weak self] in
-//            guard let self = self, self.isPiPActive else {
-//                print("PiP was not active")
-//                return
-//            }
-//            self.pipController?.stopPictureInPicture()
-//            self.isPiPActive = false
-//            print("PiP stopped")
-//        }
-//    }
-//    
-//    func enqueueVideoFrame(_ frame: RTCVideoFrame) {
-//        print("Received video frame for PiP")
-//        guard isPiPActive else {
-//            print("PiP is not active, dropping frame")
-//            return
-//        }
-//        
-//        guard let sampleBuffer = convertRTCFrameToSampleBuffer(frame) else {
-//            print("Failed to convert RTCVideoFrame to CMSampleBuffer")
-//            return
-//        }
-//        
-//        DispatchQueue.main.async { [weak self] in
-//            print("Enqueuing video frame into SampleBufferDisplayLayer")
-//            self?.sampleBufferDisplayLayer?.enqueue(sampleBuffer)
-//        }
-//    }
-//    
-//    // MARK: - Sample Buffer Conversion
-//    private func convertRTCFrameToSampleBuffer(_ frame: RTCVideoFrame) -> CMSampleBuffer? {
-//        print("Converting RTCVideoFrame to CMSampleBuffer")
-//        guard let pixelBuffer = frame.buffer as? RTCCVPixelBuffer else {
-//            print("Frame buffer is not a valid RTCCVPixelBuffer")
-//            return nil
-//        }
-//        
-//        var formatDescription: CMVideoFormatDescription?
-//        let status = CMVideoFormatDescriptionCreateForImageBuffer(
-//            allocator: kCFAllocatorDefault,
-//            imageBuffer: pixelBuffer.pixelBuffer,
-//            formatDescriptionOut: &formatDescription
-//        )
-//        
-//        guard status == noErr, let formatDescription = formatDescription else {
-//            print("Failed to create video format description")
-//            return nil
-//        }
-//        
-//        var timingInfo = CMSampleTimingInfo(
-//            duration: CMTime(value: 1, timescale: 30),
-//            presentationTimeStamp: CMTimeMake(value: Int64(frame.timeStampNs), timescale: 1_000_000_000),
-//            decodeTimeStamp: CMTime.invalid
-//        )
-//        
-//        var sampleBuffer: CMSampleBuffer?
-//        let bufferStatus = CMSampleBufferCreateReadyWithImageBuffer(
-//            allocator: kCFAllocatorDefault,
-//            imageBuffer: pixelBuffer.pixelBuffer,
-//            formatDescription: formatDescription,
-//            sampleTiming: &timingInfo,
-//            sampleBufferOut: &sampleBuffer
-//        )
-//        
-//        if bufferStatus != noErr {
-//            print("Failed to create sample buffer")
-//            return nil
-//        }
-//        
-//        print("Successfully converted frame to sample buffer")
-//        return sampleBuffer
-//    }
-//    
-//    // MARK: - PiP Delegate Methods
-//    func pictureInPictureControllerDidStartPictureInPicture(_ pictureInPictureController: AVPictureInPictureController) {
-//        print("PiP started successfully")
-//        isPiPActive = true
-//    }
-//    
-//    func pictureInPictureControllerDidStopPictureInPicture(_ pictureInPictureController: AVPictureInPictureController) {
-//        print("PiP stopped")
-//        isPiPActive = false
-//        pipController = nil
-//        sampleBufferDisplayLayer?.flush()
-//    }
-//    
-//    func pictureInPictureController(_ pictureInPictureController: AVPictureInPictureController, failedToStartPictureInPictureWithError error: Error) {
-//        print("Failed to start PiP: \(error.localizedDescription)")
-//        isPiPActive = false
-//        pipController = nil
-//    }
-//    
-//    // Required delegate methods
-//    func pictureInPictureController(_ pictureInPictureController: AVPictureInPictureController, setPlaying playing: Bool) {}
-//    func pictureInPictureControllerTimeRangeForPlayback(_ pictureInPictureController: AVPictureInPictureController) -> CMTimeRange {
-//        return CMTimeRange(start: .zero, duration: .indefinite)
-//    }
-//    func pictureInPictureControllerIsPlaybackPaused(_ pictureInPictureController: AVPictureInPictureController) -> Bool { false }
-//    func pictureInPictureController(_ pictureInPictureController: AVPictureInPictureController, didTransitionToRenderSize newRenderSize: CMVideoDimensions) {}
-//    func pictureInPictureController(_ pictureInPictureController: AVPictureInPictureController, skipByInterval skipInterval: CMTime) async {}
-//
-//}
-//
-//// MARK: - Video Processor
-//public class YourOwnBackgroundProcessor: videosdk_webrtc.VideoProcessor {
-//    public override func onFrameReceived(_ frame: RTCVideoFrame) -> RTCVideoFrame? {
-//        print("Processing video frame in YourOwnBackgroundProcessor")
-//        PiPHandler.shared.enqueueVideoFrame(frame)
-//        return frame
-//    }
-//}
-//

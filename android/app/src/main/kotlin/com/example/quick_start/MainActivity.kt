@@ -42,11 +42,13 @@ class MainActivity : FlutterActivity() {
         Log.d("MainActivity", "startPiPService");
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val params = PictureInPictureParams.Builder()
+            val paramsBuilder = PictureInPictureParams.Builder()
                 .setAspectRatio(Rational(16, 9))
-                .setAutoEnterEnabled(true)
-                .build()
-            this.enterPictureInPictureMode(params)
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                paramsBuilder.setAutoEnterEnabled(true)
+            }
+
+            this.enterPictureInPictureMode(paramsBuilder.build())
         }
     }
 }
