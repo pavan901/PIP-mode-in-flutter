@@ -1,14 +1,35 @@
-# PIP mode in flutter
+📱 Picture-in-Picture (PIP) Mode in Flutter with VideoSDK
+This repository provides an example of implementing Picture-in-Picture (PIP) mode in a Flutter app using the VideoSDK package. PIP mode allows users to minimize the video player into a small window that continues playing while they navigate the app or interact with other features.
 
-This repository provides an example of how to implement Picture-in-Picture (PIP) mode in a Flutter app using the VideoSDK package. PIP mode allows users to minimize the video player into a small window that continues playing while they navigate the app or interact with other features.
-Features
-Seamless PIP Mode: Switch between full-screen and PIP modes during video calls.
-VideoSDK Integration: Fully utilizes VideoSDK for video conferencing.
-Customizable PIP Behavior: Adjust window size, position, and behavior based on app requirements.
+✨ Features
+✅ Seamless PIP Mode – Effortlessly switch between full-screen and PIP modes during video calls.
+✅ VideoSDK Integration – Utilizes VideoSDK for high-quality video conferencing.
+✅ Customizable PIP Behavior – Adjust window size, position, and behavior to fit your app’s requirements.
 
-Getting Started
-To run this example, follow the steps below.
-Prerequisites
-Flutter SDK: Ensure you have Flutter installed. Install Flutter
-VideoSDK Package: Add the VideoSDK Flutter package to your pubspec.yaml.
-Android/iOS Setup: Ensure your app is set up to support PIP mode at the platform level.
+🚀 Getting Started
+Follow the steps below to set up and run this example.
+
+📌 Prerequisites
+1️⃣ Flutter SDK – Ensure Flutter is installed. Get Flutter
+2️⃣ VideoSDK Package – Add the VideoSDK Flutter package to your pubspec.yaml.
+3️⃣ Android/iOS Setup – Configure platform-specific settings to support PIP mode.
+
+🛠 How to Run
+Clone this repository:
+
+```
+git clone https://github.com/pavan901/PIP-mode-in-flutter.git
+cd PIP-mode-in-flutter
+```
+
+Add your VideoSDK token in lib/api_call.dart.
+Install dependencies:
+
+```
+flutter pub get
+```
+Run the app:
+```
+flutter run
+```
+Your PIP mode is now ready to use! 🎉
