@@ -1,4 +1,4 @@
-#PIP mode in flutter
+# PIP mode in flutter
 
 This repository provides an example of how to implement Picture-in-Picture (PIP) mode in a Flutter app using the VideoSDK package. PIP mode allows users to minimize the video player into a small window that continues playing while they navigate the app or interact with other features.
 Features
