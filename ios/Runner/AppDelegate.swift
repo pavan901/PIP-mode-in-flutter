@@ -11,13 +11,16 @@ import videosdk
     ) -> Bool {
         GeneratedPluginRegistrant.register(with: self)
         
-        // Register the custom background video processor
-        let bgProcessor = WebRTCFrameProcessor(sampleBufferDisplayLayer: PictureInPictureManager.shared.sampleBufferDisplayLayer)
-        let videoSDK = VideoSDK.getInstance
+        // Initialize PiP components
+        PictureInPictureManager.shared.preparePiP()
         
-        videoSDK.registerVideoProcessor(videoProcessorName: "Pavan", videoProcessor: bgProcessor)
+        // Register processor
+        VideoSDK.getInstance.registerVideoProcessor(
+            videoProcessorName: "Pavan",
+            videoProcessor: WebRTCFrameProcessor()
+        )
         
-        // Setup method channel
+        // Method channel setup
         let controller = window?.rootViewController as! FlutterViewController
         let pipChannel = FlutterMethodChannel(
             name: "pip_channel",
@@ -27,11 +30,11 @@ import videosdk
         pipChannel.setMethodCallHandler { call, result in
             switch call.method {
             case "startPip":
-                PictureInPictureManager.shared.startPip()
+                PictureInPictureManager.shared.startPiP()
                 result(nil)
                 
             case "stopPip":
-                PictureInPictureManager.shared.stopPiP()
+                PictureInPictureManager.shared.stopPip()
                 result(nil)
                 
             default:
@@ -42,38 +45,3 @@ import videosdk
         return super.application(application, didFinishLaunchingWithOptions: launchOptions)
     }
 }
-//
-//import UIKit
-//import Flutter
-//import videosdk
-//
-//@UIApplicationMain
-//@objc class AppDelegate: FlutterAppDelegate {
-//    override func application(
-//        _ application: UIApplication,
-//        didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?
-//    ) -> Bool {
-//        
-//        let bgProcessor = WebRTCVideoProcessor()
-//        let videoSDK = VideoSDK.getInstance
-//        
-//        videoSDK.registerVideoProcessor(videoProcessorName: "Pavan", videoProcessor: bgProcessor)
-//        
-//        let controller: FlutterViewController = window?.rootViewController as! FlutterViewController
-//        let pipChannel = FlutterMethodChannel(name: "pip_channel",
-//                                              binaryMessenger: controller.binaryMessenger)
-//        
-//        pipChannel.setMethodCallHandler { (call: FlutterMethodCall, result: @escaping FlutterResult) in
-//            if call.method == "startPip" {
-//                PiPManager.shared.startPiP()
-//            } else {
-//                result(FlutterMethodNotImplemented)
-//            }
-//        }
-//        
-//        GeneratedPluginRegistrant.register(with: self)
-//        return super.application(application, didFinishLaunchingWithOptions: launchOptions)
-//    }
-//
-//}
-//

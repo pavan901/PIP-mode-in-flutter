@@ -27,20 +27,20 @@ class MeetingControls extends StatelessWidget {
             child: const Text('Leave'),
           ),
           ElevatedButton(
-            onPressed: onToggleMicButtonPressed,
-            child: const Text('Toggle Mic'),
-          ),
-          ElevatedButton(
-            onPressed: onToggleCameraButtonPressed,
-            child: const Text('Toggle WebCam'),
-          ),
-          ElevatedButton(
             onPressed: pipButtonPressed,
             child: const Text('PIP'),
           ),
           ElevatedButton(
             onPressed: register,
             child: const Text('Register'),
+          ),
+          ElevatedButton(
+            onPressed: onToggleMicButtonPressed,
+            child: const Text('Toggle Mic'),
+          ),
+          ElevatedButton(
+            onPressed: onToggleCameraButtonPressed,
+            child: const Text('Toggle WebCam'),
           ),
         ],
       ),
