@@ -26,6 +26,8 @@ class _MeetingScreenState extends State<MeetingScreen>
   var camEnabled = true;
   bool isPiPMode = false;
   final platform = MethodChannel('pip_channel');
+  static const pip = MethodChannel('com.example.app/native_comm');
+  String _messageFromNative = 'No message yet';
 
   Map<String, Participant> participants = {};
 
@@ -33,7 +35,7 @@ class _MeetingScreenState extends State<MeetingScreen>
   void initState() {
     super.initState();
 
-    WidgetsBinding.instance.addObserver(this); // No need for casting
+    WidgetsBinding.instance.addObserver(this);
 
     // Create room
     _room = VideoSDK.createRoom(
@@ -49,6 +51,31 @@ class _MeetingScreenState extends State<MeetingScreen>
 
     // Join room
     _room.join();
+
+    if (Platform.isIOS) {
+      VideoSDK.applyVideoProcessor(videoProcessorName: "Pavan");
+    }
+
+    pip.setMethodCallHandler(_handleMethodCall);
+  }
+
+  Future<dynamic> _handleMethodCall(MethodCall call) async {
+    switch (call.method) {
+      case 'sendMessage':
+        setState(() {
+          _messageFromNative = call.arguments['message'];
+        });
+        if (_messageFromNative == "Done") {
+          Navigator.push(context,
+              MaterialPageRoute(builder: (context) => PiPView(room: _room)));
+        }
+        return 'Message received in Flutter';
+      default:
+        throw PlatformException(
+          code: 'NotImplemented',
+          message: 'Method ${call.method} not implemented',
+        );
+    }
   }
 
   @override
@@ -57,13 +84,6 @@ class _MeetingScreenState extends State<MeetingScreen>
     super.dispose();
   }
 
-  @override
-  void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.inactive ||
-        state == AppLifecycleState.paused) {
-      enterPiPMode();
-    }
-  }
 
   void setMeetingEventListener() {
     _room.on(Events.roomJoined, () {
@@ -78,12 +98,6 @@ class _MeetingScreenState extends State<MeetingScreen>
       (Participant participant) {
         setState(() {
           participants.putIfAbsent(participant.id, () => participant);
-          print("Pavan : ${participant}");
-        });
-        participant.on(Events.streamEnabled, (Stream stream) {
-          setState(() {
-            print("stream enable: ${stream}");
-          });
         });
       },
     );
@@ -126,7 +140,7 @@ class _MeetingScreenState extends State<MeetingScreen>
       onWillPop: () => _onWillPop(),
       child: Scaffold(
         appBar: AppBar(
-          title: const Text('VideoSDK QuickStart'),
+          title: Text("Pip Mode"),
         ),
         body: Padding(
           padding: const EdgeInsets.all(8.0),
@@ -172,9 +186,6 @@ class _MeetingScreenState extends State<MeetingScreen>
                   pipButtonPressed: () async {
                     enterPiPMode();
                   },
-                  register: () {
-                    VideoSDK.applyVideoProcessor(videoProcessorName: "Pavan");
-                  },
                 ),
             ],
           ),
@@ -195,8 +206,7 @@ class _MeetingScreenState extends State<MeetingScreen>
             ),
           );
         }
-      }
-       else if (Platform.isIOS) {
+      } else if (Platform.isIOS) {
         try {
           await platform.invokeMethod('startPip');
         } on PlatformException catch (e) {
@@ -207,6 +217,4 @@ class _MeetingScreenState extends State<MeetingScreen>
       print("Failed to enter PiP mode: ${e.message}");
     }
   }
-
-
 }

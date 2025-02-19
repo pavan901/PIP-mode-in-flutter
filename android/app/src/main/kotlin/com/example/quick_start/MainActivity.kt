@@ -16,6 +16,7 @@ class MainActivity : FlutterActivity() {
     }
 
     private val CHANNEL = "pip_channel"
+    private val PIP = "com.example.app/native_comm"
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -34,6 +35,23 @@ class MainActivity : FlutterActivity() {
                 result.notImplemented()
             }
         }
+        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, PIP).setMethodCallHandler { call, result ->
+
+        }
+    }
+
+    private fun sendMessageToFlutter(message: String) {
+        MethodChannel(flutterEngine!!.dartExecutor.binaryMessenger, PIP)
+            .invokeMethod("sendMessage", hashMapOf("message" to message))
+    }
+    
+
+    override fun onPictureInPictureRequested() : Boolean {
+        Log.d("MainActivity", "onPictureInPictureRequested" + super.onPictureInPictureRequested());
+
+        startPiPService()
+        sendMessageToFlutter("Done")
+        return super.onPictureInPictureRequested()
     }
 
 
@@ -44,10 +62,6 @@ class MainActivity : FlutterActivity() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val paramsBuilder = PictureInPictureParams.Builder()
                 .setAspectRatio(Rational(16, 9))
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                paramsBuilder.setAutoEnterEnabled(true)
-            }
-
             this.enterPictureInPictureMode(paramsBuilder.build())
         }
     }

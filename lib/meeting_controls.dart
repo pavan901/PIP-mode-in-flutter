@@ -5,14 +5,12 @@ class MeetingControls extends StatelessWidget {
   final void Function() onToggleCameraButtonPressed;
   final void Function() onLeaveButtonPressed;
   final void Function() pipButtonPressed;
-  final void Function() register;
   const MeetingControls({
     super.key,
     required this.onToggleMicButtonPressed,
     required this.onToggleCameraButtonPressed,
     required this.onLeaveButtonPressed,
     required this.pipButtonPressed,
-    required this.register,
   });
 
   @override
@@ -29,10 +27,6 @@ class MeetingControls extends StatelessWidget {
           ElevatedButton(
             onPressed: pipButtonPressed,
             child: const Text('PIP'),
-          ),
-          ElevatedButton(
-            onPressed: register,
-            child: const Text('Register'),
           ),
           ElevatedButton(
             onPressed: onToggleMicButtonPressed,

@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:videosdk/videosdk.dart';
 import './participant_tile.dart';
 
