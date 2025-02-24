@@ -14,9 +14,6 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       title: 'VideoSDK QuickStart',
-      theme: ThemeData(
-        primarySwatch: Colors.blue,
-      ),
       home: JoinScreen(),
     );
   }

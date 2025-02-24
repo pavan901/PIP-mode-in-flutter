@@ -26,7 +26,6 @@ class _PiPViewState extends State<PiPView> with WidgetsBindingObserver {
     // Initialize participants list
     participants.putIfAbsent(
         _room.localParticipant.id, () => _room.localParticipant);
-
     participants.addAll(_room.participants);
   }
 
@@ -75,23 +74,22 @@ class _PiPViewState extends State<PiPView> with WidgetsBindingObserver {
 
   Widget _buildParticipantsView(List<Participant> participantList) {
     if (participantList.length == 1) {
-      // Only local participant, show message
-      return Column(
-        mainAxisAlignment: MainAxisAlignment.center,
+      return Row(
         children: [
           Expanded(child: ParticipantTile(participant: _room.localParticipant)),
-          const Text(
-            "No one else in this meeting",
-            style: TextStyle(color: Colors.white),
+          Expanded(
+            child: Container(
+              color: Colors.grey.shade800,
+              child: const Center(
+                child: Text(
+                  "Only one participant in the meeting",
+                  style: TextStyle(color: Colors.white, fontSize: 12),
+                  textAlign: TextAlign.center,
+                ),
+              ),
+            ),
           ),
         ],
-      );
-    } else if (participantList.length == 2) {
-      // Show both participants
-      return Row(
-        children: participantList
-            .map((participant) => Expanded(child: ParticipantTile(participant: participant)))
-            .toList(),
       );
     } else {
       // Show local and one remote participant

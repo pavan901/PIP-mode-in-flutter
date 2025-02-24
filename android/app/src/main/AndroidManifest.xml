@@ -1,4 +1,4 @@
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android" package = "com.example.quick_start">
 
     <uses-feature android:name="android.hardware.camera" />
     <uses-feature android:name="android.hardware.camera.autofocus" />
@@ -15,7 +15,6 @@
     
     <application
         android:label="quick_start"
-        android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
 
         <activity
@@ -23,7 +22,7 @@
             android:exported="true"
             android:launchMode="singleTop"
             android:taskAffinity=""
-            android:theme="@style/LaunchTheme"
+            android:theme="@style/Theme.AppCompat.DayNight.NoActionBar"
             android:configChanges="orientation|screenSize|smallestScreenSize|screenLayout"
             android:hardwareAccelerated="true"
             android:windowSoftInputMode="adjustResize"

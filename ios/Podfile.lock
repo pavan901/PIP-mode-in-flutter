@@ -12,10 +12,6 @@ PODS:
   - shared_preferences_foundation (0.0.1):
     - Flutter
     - FlutterMacOS
-  - vdocipher_flutter (2.7.6):
-    - Flutter
-    - VdoFramework (= 2.7.0)
-  - VdoFramework (2.7.0)
   - videosdk (0.0.1):
     - Flutter
     - videosdk_webrtc
@@ -31,13 +27,11 @@ DEPENDENCIES:
   - path_provider_foundation (from `.symlinks/plugins/path_provider_foundation/darwin`)
   - permission_handler_apple (from `.symlinks/plugins/permission_handler_apple/ios`)
   - shared_preferences_foundation (from `.symlinks/plugins/shared_preferences_foundation/darwin`)
-  - vdocipher_flutter (from `.symlinks/plugins/vdocipher_flutter/ios`)
   - videosdk (from `.symlinks/plugins/videosdk/ios`)
   - videosdk_webrtc (from `.symlinks/plugins/videosdk_webrtc/ios`)
 
 SPEC REPOS:
   trunk:
-    - VdoFramework
     - WebRTC-SDK
 
 EXTERNAL SOURCES:
@@ -53,8 +47,6 @@ EXTERNAL SOURCES:
     :path: ".symlinks/plugins/permission_handler_apple/ios"
   shared_preferences_foundation:
     :path: ".symlinks/plugins/shared_preferences_foundation/darwin"
-  vdocipher_flutter:
-    :path: ".symlinks/plugins/vdocipher_flutter/ios"
   videosdk:
     :path: ".symlinks/plugins/videosdk/ios"
   videosdk_webrtc:
@@ -67,8 +59,6 @@ SPEC CHECKSUMS:
   path_provider_foundation: 080d55be775b7414fd5a5ef3ac137b97b097e564
   permission_handler_apple: 4ed2196e43d0651e8ff7ca3483a069d469701f2d
   shared_preferences_foundation: 9e1978ff2562383bd5676f64ec4e9aa8fa06a6f7
-  vdocipher_flutter: b04c2c7978c1db2c5185962a8c39be7a9910ce84
-  VdoFramework: 02de27ac036e24d2ce4cbd81d3634b715dff52c2
   videosdk: 54cf046d46212a7de6d45720e83a6c9281a49e3d
   videosdk_webrtc: c796ef15672144a4a984107f433e45fad86819f2
   WebRTC-SDK: efc3e67e0355b1ee14bfe3c91188cada6000cb94

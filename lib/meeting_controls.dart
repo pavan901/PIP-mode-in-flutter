@@ -5,6 +5,7 @@ class MeetingControls extends StatelessWidget {
   final void Function() onToggleCameraButtonPressed;
   final void Function() onLeaveButtonPressed;
   final void Function() pipButtonPressed;
+
   const MeetingControls({
     super.key,
     required this.onToggleMicButtonPressed,
@@ -15,28 +16,55 @@ class MeetingControls extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-        children: [
-          ElevatedButton(
-            onPressed: onLeaveButtonPressed,
-            child: const Text('Leave'),
-          ),
-          ElevatedButton(
-            onPressed: pipButtonPressed,
-            child: const Text('PIP'),
-          ),
-          ElevatedButton(
-            onPressed: onToggleMicButtonPressed,
-            child: const Text('Toggle Mic'),
-          ),
-          ElevatedButton(
-            onPressed: onToggleCameraButtonPressed,
-            child: const Text('Toggle WebCam'),
-          ),
-        ],
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+          children: [
+            _buildControlButton(
+              label: "Togel mic",
+              onPressed: onToggleMicButtonPressed,
+            ),
+            _buildControlButton(
+              label: "Togal camera",
+              onPressed: onToggleCameraButtonPressed,
+            ),
+          ],
+        ),
+        const SizedBox(height: 10),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+          children: [
+            _buildControlButton(
+              label: "Leave",
+              onPressed: onLeaveButtonPressed,
+            ),
+            _buildControlButton(
+              label: "PIP",
+              onPressed: pipButtonPressed,
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildControlButton({
+    required String label,
+    required void Function() onPressed,
+  }) {
+    return ElevatedButton(
+      onPressed: onPressed,
+      style: ElevatedButton.styleFrom(
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(8),
+        ),
+      ),
+      child: Text(
+        label,
+        style: const TextStyle(color: Colors.black, fontSize: 16),
       ),
     );
   }

@@ -24,7 +24,6 @@ class _MeetingScreenState extends State<MeetingScreen>
   late Room _room;
   var micEnabled = true;
   var camEnabled = true;
-  bool isPiPMode = false;
   final platform = MethodChannel('pip_channel');
   static const pip = MethodChannel('com.example.app/native_comm');
   String _messageFromNative = 'No message yet';
@@ -39,7 +38,7 @@ class _MeetingScreenState extends State<MeetingScreen>
 
     // Create room
     _room = VideoSDK.createRoom(
-        roomId: "1j2a-uap5-w285",
+        roomId: "os3j-krqa-91r6",
         token: widget.token,
         displayName: "John Doe",
         micEnabled: micEnabled,
@@ -51,12 +50,11 @@ class _MeetingScreenState extends State<MeetingScreen>
 
     // Join room
     _room.join();
-
-    if (Platform.isIOS) {
-      VideoSDK.applyVideoProcessor(videoProcessorName: "Pavan");
+    if (Platform.isAndroid) {
+      MethodChannel('meeting_status_channel')
+          .invokeMethod('setMeetingScreen', true);
+      pip.setMethodCallHandler(_handleMethodCall);
     }
-
-    pip.setMethodCallHandler(_handleMethodCall);
   }
 
   Future<dynamic> _handleMethodCall(MethodCall call) async {
@@ -66,8 +64,12 @@ class _MeetingScreenState extends State<MeetingScreen>
           _messageFromNative = call.arguments['message'];
         });
         if (_messageFromNative == "Done") {
-          Navigator.push(context,
-              MaterialPageRoute(builder: (context) => PiPView(room: _room)));
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => PiPView(room: _room),
+            ),
+          );
         }
         return 'Message received in Flutter';
       default:
@@ -81,12 +83,23 @@ class _MeetingScreenState extends State<MeetingScreen>
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    if (Platform.isAndroid) {
+      MethodChannel('meeting_status_channel')
+          .invokeMethod('setMeetingScreen', false);
+    }
+    if (Platform.isIOS) {
+      platform.invokeMethod("dispose");
+    }
     super.dispose();
   }
 
-
   void setMeetingEventListener() {
     _room.on(Events.roomJoined, () {
+      print("meeting joined");
+      if (Platform.isIOS) {
+        VideoSDK.applyVideoProcessor(videoProcessorName: "Pavan");
+        platform.invokeMethod("setupPiP");
+      }
       setState(() {
         participants.putIfAbsent(
             _room.localParticipant.id, () => _room.localParticipant);
@@ -101,6 +114,11 @@ class _MeetingScreenState extends State<MeetingScreen>
         });
       },
     );
+
+    _room.on(Events.error, (error) {
+      print(
+          "VIDEOSDK ERROR :: ${error['code']}  :: ${error['name']} :: ${error['message']}");
+    });
 
     _room.on(Events.streamEnabled, (Stream stream) {
       setState(() {
@@ -146,47 +164,41 @@ class _MeetingScreenState extends State<MeetingScreen>
           padding: const EdgeInsets.all(8.0),
           child: Column(
             children: [
-              if (!isPiPMode) Text(widget.meetingId),
+              Text(widget.meetingId),
               Expanded(
                 child: Padding(
                     padding: const EdgeInsets.all(8.0),
-                    child: isPiPMode
-                        ? ParticipantTile(
-                            participant: participants.values.first,
-                          )
-                        : GridView.builder(
-                            gridDelegate:
-                                const SliverGridDelegateWithFixedCrossAxisCount(
-                              crossAxisCount: 2,
-                              crossAxisSpacing: 8.0,
-                              mainAxisSpacing: 8.0,
-                            ),
-                            itemCount: participants.length,
-                            itemBuilder: (context, index) {
-                              return ParticipantTile(
-                                participant:
-                                    participants.values.elementAt(index),
-                              );
-                            },
-                          )),
+                    child: GridView.builder(
+                      gridDelegate:
+                          const SliverGridDelegateWithFixedCrossAxisCount(
+                        crossAxisCount: 2,
+                        crossAxisSpacing: 8.0,
+                        mainAxisSpacing: 8.0,
+                      ),
+                      itemCount: participants.length,
+                      itemBuilder: (context, index) {
+                        return ParticipantTile(
+                          participant: participants.values.elementAt(index),
+                        );
+                      },
+                    )),
               ),
-              if (!isPiPMode)
-                MeetingControls(
-                  onToggleMicButtonPressed: () {
-                    micEnabled ? _room.muteMic() : _room.unmuteMic();
-                    micEnabled = !micEnabled;
-                  },
-                  onToggleCameraButtonPressed: () {
-                    camEnabled ? _room.disableCam() : _room.enableCam();
-                    camEnabled = !camEnabled;
-                  },
-                  onLeaveButtonPressed: () {
-                    _room.leave();
-                  },
-                  pipButtonPressed: () async {
-                    enterPiPMode();
-                  },
-                ),
+              MeetingControls(
+                onToggleMicButtonPressed: () {
+                  micEnabled ? _room.muteMic() : _room.unmuteMic();
+                  micEnabled = !micEnabled;
+                },
+                onToggleCameraButtonPressed: () {
+                  camEnabled ? _room.disableCam() : _room.enableCam();
+                  camEnabled = !camEnabled;
+                },
+                onLeaveButtonPressed: () async {
+                  _room.leave();
+                },
+                pipButtonPressed: () async {
+                  enterPiPMode();
+                },
+              ),
             ],
           ),
         ),
@@ -208,7 +220,7 @@ class _MeetingScreenState extends State<MeetingScreen>
         }
       } else if (Platform.isIOS) {
         try {
-          await platform.invokeMethod('startPip');
+          await platform.invokeMethod('startPiP');
         } on PlatformException catch (e) {
           print("Failed to enter PiP: '${e.message}'.");
         }

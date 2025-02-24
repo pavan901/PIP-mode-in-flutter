@@ -17,6 +17,8 @@ class MainActivity : FlutterActivity() {
 
     private val CHANNEL = "pip_channel"
     private val PIP = "com.example.app/native_comm"
+    private val MEETING_CHANNEL = "meeting_status_channel"
+    private var isInMeetingScreen: Boolean = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -25,9 +27,11 @@ class MainActivity : FlutterActivity() {
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
+
+
+        // this is for the buton click
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger, CHANNEL).setMethodCallHandler { call, result ->
             if (call.method == "enterPiPMode") {
-                Log.d("MainActivity", "enterPiPMode");
                 startPiPService()
                 result.success(null)
             }
@@ -35,9 +39,21 @@ class MainActivity : FlutterActivity() {
                 result.notImplemented()
             }
         }
+
+        //this for send ack back to flutter side
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger, PIP).setMethodCallHandler { call, result ->
 
         }
+
+        // this is for the meeting screen pip only 
+        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, MEETING_CHANNEL).setMethodCallHandler { call, result ->
+            if (call.method == "setMeetingScreen") {
+                isInMeetingScreen = call.arguments as Boolean 
+                result.success(null)
+            } else {
+                result.notImplemented()
+            }
+        }        
     }
 
     private fun sendMessageToFlutter(message: String) {
@@ -47,13 +63,14 @@ class MainActivity : FlutterActivity() {
     
 
     override fun onPictureInPictureRequested() : Boolean {
-        Log.d("MainActivity", "onPictureInPictureRequested" + super.onPictureInPictureRequested());
-
-        startPiPService()
-        sendMessageToFlutter("Done")
-        return super.onPictureInPictureRequested()
+        Log.d("MainActivity", "onPictureInPictureRequested: $isInMeetingScreen")
+        if (isInMeetingScreen) {
+            startPiPService()
+            sendMessageToFlutter("Done")
+            return true
+        }
+        return super.onPictureInPictureRequested()    
     }
-
 
     private fun startPiPService() {
 

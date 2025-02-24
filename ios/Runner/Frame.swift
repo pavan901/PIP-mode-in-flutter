@@ -1,21 +1,11 @@
 import UIKit
-import AVFoundation
 import AVKit
-import WebRTC
 import videosdk_webrtc
+import Combine
+import SwiftUI
 
-// MARK: - Protocol Definition
-protocol PictureInPictureManagerDelegate: AnyObject {
-    func willStartPictureInPicture()
-    func didStartPictureInPicture()
-    func willStopPictureInPicture()
-    func didStopPictureInPicture()
-    func failedToStartPictureInPicture(error: Error)
-}
-
-// MARK: - CustomPiPVideoView
-// This view's backing layer is an AVSampleBufferDisplayLayer.
-class CustomPiPVideoView: UIView {
+// MARK: - CustomVideoView
+class CustomVideoView: UIView {
     override class var layerClass: AnyClass {
         return AVSampleBufferDisplayLayer.self
     }
@@ -35,171 +25,24 @@ class CustomPiPVideoView: UIView {
     }
 }
 
-// MARK: - PictureInPictureManager
-class PictureInPictureManager: NSObject {
+// MARK: - RTCFrameRenderer
+class RTCFrameRenderer {
+    static let shared = RTCFrameRenderer()
+    private var videoView: CustomVideoView?
     
-    // MARK: - Properties
-    static let shared = PictureInPictureManager()
+    private init() {}
     
-    private var pipController: AVPictureInPictureController?
-    private let pipContentViewController = AVPictureInPictureVideoCallViewController()
-    private let pipVideoContainer = UIView()
-    private var isPiPPrepared = false
-    
-    var isActive: Bool { pipController?.isPictureInPictureActive ?? false }
-    var isSupported: Bool { AVPictureInPictureController.isPictureInPictureSupported() }
-    
-    private var pipVideoView: CustomPiPVideoView?
-    
-    // MARK: - Initialization
-    private override init() {
-        super.init()
-        setupPiPComponents()
-        setupAudioSession()
-        setupVideoViews()
-    }
-    
-    private func setupVideoViews() {
-        // Create our custom PiP video view (uses AVSampleBufferDisplayLayer)
-        pipVideoView = CustomPiPVideoView(frame: .zero)
-        if let pipView = pipVideoView {
-            pipVideoContainer.addSubview(pipView)
-            pipView.translatesAutoresizingMaskIntoConstraints = false
-            NSLayoutConstraint.activate([
-                pipView.leadingAnchor.constraint(equalTo: pipVideoContainer.leadingAnchor),
-                pipView.trailingAnchor.constraint(equalTo: pipVideoContainer.trailingAnchor),
-                pipView.topAnchor.constraint(equalTo: pipVideoContainer.topAnchor),
-                pipView.bottomAnchor.constraint(equalTo: pipVideoContainer.bottomAnchor)
-            ])
-        }
-    }
-    
-    private func setupPiPComponents() {
-        // Setup main container
-        pipVideoContainer.backgroundColor = .black
-        pipVideoContainer.frame = CGRect(x: 0, y: 0, width: 200, height: 200)
-        
-        // Setup PiP content view
-        pipContentViewController.view.addSubview(pipVideoContainer)
-        pipVideoContainer.translatesAutoresizingMaskIntoConstraints = false
-        NSLayoutConstraint.activate([
-            pipVideoContainer.centerXAnchor.constraint(equalTo: pipContentViewController.view.centerXAnchor),
-            pipVideoContainer.centerYAnchor.constraint(equalTo: pipContentViewController.view.centerYAnchor),
-            pipVideoContainer.widthAnchor.constraint(equalToConstant: 200),
-            pipVideoContainer.heightAnchor.constraint(equalToConstant: 200)
-        ])
-    }
-    
-    private func setupAudioSession() {
-        do {
-            let session = AVAudioSession.sharedInstance()
-            try session.setCategory(
-                .playAndRecord,
-                mode: .videoChat,
-                options: [.allowBluetooth, .allowBluetoothA2DP, .mixWithOthers]
-            )
-            try session.setActive(true)
-        } catch {
-            print("Audio session error: \(error.localizedDescription)")
-        }
-    }
-    
-    func preparePiP() {
-        guard !isPiPPrepared else { return }
-        
-        let contentSource = AVPictureInPictureController.ContentSource(
-            activeVideoCallSourceView: pipVideoContainer,
-            contentViewController: pipContentViewController
-        )
-        
-        pipController = AVPictureInPictureController(contentSource: contentSource)
-        pipController?.delegate = self
-        pipController?.canStartPictureInPictureAutomaticallyFromInline = true
-        print("PiP controller prepared: isPictureInPicturePossible: \(pipController?.isPictureInPicturePossible ?? false)")
-        isPiPPrepared = true
-    }
-    
-    func startPiP() {
-        guard AVPictureInPictureController.isPictureInPictureSupported() else {
-            print("PiP not supported")
-            return
-        }
-        
-        DispatchQueue.main.async { [weak self] in
-            guard let self = self else { return }
-            
-            // When in background, let the system handle PiP.
-            // When in foreground, use our floating PiP view.
-            if UIApplication.shared.applicationState == .background {
-                // System PiP mode
-                if self.pipContentViewController.view.window == nil {
-                    if let window = UIApplication.shared.windows.first(where: { $0.isKeyWindow }) {
-                        window.addSubview(self.pipContentViewController.view)
-                        self.pipContentViewController.view.frame = window.bounds
-                        print("Added pipContentViewController.view to window for background PiP")
-                    } else {
-                        print("No key window found")
-                    }
-                }
-                self.preparePiP()
-                print("isPictureInPicturePossible: \(self.pipController?.isPictureInPicturePossible ?? false)")
-                self.pipVideoContainer.isHidden = false
-                self.pipController?.startPictureInPicture()
-                print("System PiP started")
-            } else {
-                // Foreground: simulate a floating PiP window.
-                self.attachFloatingPiPView()
-                print("Floating PiP view attached in foreground")
-            }
-        }
-    }
-    
-    // New method: When app is in foreground, attach the PiP view as a draggable, floating view.
-    func attachFloatingPiPView() {
-        guard let window = UIApplication.shared.windows.first(where: { $0.isKeyWindow }) else {
-            print("No key window for floating PiP view")
-            return
-        }
-        // If not already added, add the content view to the window.
-        if self.pipContentViewController.view.superview == nil {
-            window.addSubview(self.pipContentViewController.view)
-        }
-        let size: CGFloat = 200
-        let x = window.bounds.width - size - 10
-        let y = window.bounds.height - size - 10
-        self.pipContentViewController.view.frame = CGRect(x: x, y: y, width: size, height: size)
-        self.pipContentViewController.view.layer.cornerRadius = 8
-        self.pipContentViewController.view.clipsToBounds = true
-        // Add pan gesture recognizer for repositioning if not already added.
-        if self.pipContentViewController.view.gestureRecognizers == nil || self.pipContentViewController.view.gestureRecognizers?.isEmpty == true {
-            let panGesture = UIPanGestureRecognizer(target: self, action: #selector(handlePan(_:)))
-            self.pipContentViewController.view.addGestureRecognizer(panGesture)
-        }
-    }
-
-    @objc private func handlePan(_ gesture: UIPanGestureRecognizer) {
-        guard let view = gesture.view, let superview = view.superview else { return }
-        let translation = gesture.translation(in: superview)
-        view.center = CGPoint(x: view.center.x + translation.x, y: view.center.y + translation.y)
-        gesture.setTranslation(.zero, in: superview)
-    }
-    
-    func stopPip() {
-        DispatchQueue.main.async { [weak self] in
-            guard let self = self else { return }
-            self.pipController?.stopPictureInPicture()
-            self.pipVideoContainer.isHidden = true
-        }
+    func attachVideoView(_ view: CustomVideoView) {
+        self.videoView = view
     }
     
     func renderFrame(_ frame: RTCVideoFrame) {
         DispatchQueue.main.async { [weak self] in
-            guard let self = self else { return }
-            // Convert the RTCVideoFrame to a CMSampleBuffer and enqueue it onto our custom pip view's display layer.
-            if let sampleBuffer = self.convertFrameToSampleBuffer(frame),
-               let pipView = self.pipVideoView {
-                pipView.displayLayer.enqueue(sampleBuffer)
+            guard let self = self, let sampleBuffer = self.convertFrameToSampleBuffer(frame) else {
+                print("Failed to convert RTC frame to sample buffer")
+                return
             }
+            self.videoView?.displayLayer.enqueue(sampleBuffer)
         }
     }
     
@@ -250,79 +93,177 @@ class PictureInPictureManager: NSObject {
     }
 }
 
-// MARK: - AVPictureInPictureControllerDelegate
-extension PictureInPictureManager: AVPictureInPictureControllerDelegate {
-    func pictureInPictureControllerDidStartPictureInPicture(_ pictureInPictureController: AVPictureInPictureController) {
-        print("PiP started successfully")
-        pipVideoContainer.isHidden = false
-    }
-    
-    func pictureInPictureControllerDidStopPictureInPicture(_ pictureInPictureController: AVPictureInPictureController) {
-        print("PiP stopped")
-        pipVideoContainer.isHidden = true
-    }
-    
-    func pictureInPictureController(_ pictureInPictureController: AVPictureInPictureController, failedToStartPictureInPictureWithError error: Error) {
-        print("PiP failed to start: \(error.localizedDescription)")
-        pipVideoContainer.isHidden = true
-    }
-}
-
 // MARK: - Frame Processor
 class WebRTCFrameProcessor: VideoProcessor {
     private var isProcessing = false
     
     override func onFrameReceived(_ frame: RTCVideoFrame) -> RTCVideoFrame? {
-        // Validate frame
         guard let buffer = frame.buffer as? RTCCVPixelBuffer,
               CVPixelBufferGetWidth(buffer.pixelBuffer) > 0 else {
             print("Invalid frame buffer")
             return frame
         }
         
-        // Ensure we're not already processing
         guard !isProcessing else { return frame }
         
         isProcessing = true
-        
-        // Process frame via our PiP manager so the sample buffer gets enqueued
-        PictureInPictureManager.shared.renderFrame(frame)
-        
+        RTCFrameRenderer.shared.renderFrame(frame)
         isProcessing = false
-        print("frame processed before return")
+        
         return frame
     }
 }
 
-// MARK: - Helper Extensions
-extension RTCVideoFrameBuffer {
-    func toPixelBuffer() -> CVPixelBuffer? {
-        guard let i420Buffer = self as? RTCCVPixelBuffer else { return nil }
-        return i420Buffer.pixelBuffer
+// MARK: - VideoViewController
+class VideoViewController: UIViewController, AVPictureInPictureControllerDelegate {
+    private let videoView = CustomVideoView()
+    private var pipController: AVPictureInPictureController?
+    private var playerLayer: AVPlayerLayer?
+    private var player: AVPlayer?
+    private var pipVideoCallViewController: AVPictureInPictureVideoCallViewController?
+    
+    override func viewDidLoad() {
+        super.viewDidLoad()
+        print("VideoViewController Loaded")
+        setupVideoView()
+    }
+    
+    private func setupVideoView() {
+        view.addSubview(videoView)
+        videoView.translatesAutoresizingMaskIntoConstraints = false
+        
+        NSLayoutConstraint.activate([
+            videoView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+            videoView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+            videoView.widthAnchor.constraint(equalTo: videoView.heightAnchor, multiplier: 9.0/16.0),
+            videoView.heightAnchor.constraint(equalTo: view.heightAnchor, multiplier: 0.9)
+        ])
+        
+        RTCFrameRenderer.shared.attachVideoView(videoView)
     }
 }
 
-extension CVPixelBuffer {
-    func toCMSampleBuffer() -> CMSampleBuffer? {
-        var formatDescription: CMFormatDescription?
-        CMVideoFormatDescriptionCreateForImageBuffer(
-            allocator: kCFAllocatorDefault,
-            imageBuffer: self,
-            formatDescriptionOut: &formatDescription)
+
+
+//MARK: - PiP View
+
+class PiPManager: NSObject, AVPictureInPictureControllerDelegate {
+    
+    static var pipVideoCallViewController: UIViewController?
+    static var pipController: AVPictureInPictureController?
+    
+    static let shared = PiPManager()
+    
+    static func setupPiP() {
+        guard AVPictureInPictureController.isPictureInPictureSupported() else {
+            print("PiP Mode is not supported at this time")
+            return
+        }
         
-        var timing = CMSampleTimingInfo(
-            duration: CMTime.invalid,
-            presentationTimeStamp: CMTime.zero,
-            decodeTimeStamp: CMTime.invalid)
+        guard let uiView = UIApplication.shared.keyWindow?.rootViewController?.view else {
+            print("hello error view not receiving")
+            return
+        }
         
-        var sampleBuffer: CMSampleBuffer?
-        CMSampleBufferCreateReadyWithImageBuffer(
-            allocator: kCFAllocatorDefault,
-            imageBuffer: self,
-            formatDescription: formatDescription!,
-            sampleTiming: &timing,
-            sampleBufferOut: &sampleBuffer)
+        let pipVideoCallViewController = AVPictureInPictureVideoCallViewController()
+        self.pipVideoCallViewController = pipVideoCallViewController
         
-        return sampleBuffer
+        let videoView = CustomVideoView()
+        RTCFrameRenderer.shared.attachVideoView(videoView)
+        
+        pipVideoCallViewController.view.addConstrained(subview: videoView)
+        videoView.transform = CGAffineTransform(rotationAngle: .pi / 2)
+        pipVideoCallViewController.preferredContentSize = CGSize(width: 9, height: 16)
+        
+        let pipContentSource = AVPictureInPictureController.ContentSource(
+            activeVideoCallSourceView: uiView,
+            contentViewController: pipVideoCallViewController
+        )
+        
+        pipController = AVPictureInPictureController(contentSource: pipContentSource)
+        pipController?.delegate = shared
+        
+        pipController?.canStartPictureInPictureAutomaticallyFromInline = true
+        
+        NotificationCenter.default.addObserver(forName: UIApplication.didBecomeActiveNotification,
+                                               object: nil, queue: .main) { _ in
+            stopPIP()
+        }
+
+        print("nil")
+    }
+    
+    static func startPIP() {
+        pipController?.startPictureInPicture()
+    }
+
+    static func stopPIP() {
+        pipController?.stopPictureInPicture()
+    }
+    
+    static func dispose() {
+        pipController?.stopPictureInPicture()
+        
+        // Remove all frames from the AVSampleBufferDisplayLayer
+        if let videoView = pipVideoCallViewController?.view.subviews.first as? CustomVideoView {
+            videoView.displayLayer.flushAndRemoveImage()
+        }
+        
+        // Remove the video view from the PiP controller
+        pipVideoCallViewController?.view.subviews.forEach { $0.removeFromSuperview() }
+        
+        // Deallocate PiP-related objects
+        pipController = nil
+        pipVideoCallViewController = nil
+    }
+
+
+    static func isPIPAvailable(_ result: @escaping FlutterResult) {
+        result(AVPictureInPictureController.isPictureInPictureSupported())
+    }
+
+    static func isPIPActive(_ result: @escaping FlutterResult) {
+        result(pipController?.isPictureInPictureActive ?? false)
+    }
+    
+    // MARK: - AVPictureInPictureControllerDelegate Methods
+    
+    func pictureInPictureControllerWillStartPictureInPicture(_ pictureInPictureController: AVPictureInPictureController) {
+        print(#function)
+    }
+
+    func pictureInPictureControllerDidStartPictureInPicture(_ pictureInPictureController: AVPictureInPictureController) {
+        print(#function)
+    }
+
+    func pictureInPictureControllerDidStopPictureInPicture(_ pictureInPictureController: AVPictureInPictureController) {
+        print(#function)
+    }
+
+    func pictureInPictureController(_ pictureInPictureController: AVPictureInPictureController, failedToStartPictureInPictureWithError error: Error) {
+        print(#function, error)
+    }
+
+    func pictureInPictureControllerWillStopPictureInPicture(_ pictureInPictureController: AVPictureInPictureController) {
+        print(#function)
+    }
+
+    func pictureInPictureController(_ pictureInPictureController: AVPictureInPictureController, restoreUserInterfaceForPictureInPictureStopWithCompletionHandler completionHandler: @escaping (Bool) -> Void) {
+        print(#function)
+        completionHandler(true)
+    }
+}
+
+// MARK: - UIView Extension for Convenience
+extension UIView {
+    func addConstrained(subview: UIView) {
+        addSubview(subview)
+        subview.translatesAutoresizingMaskIntoConstraints = false
+        NSLayoutConstraint.activate([
+            subview.topAnchor.constraint(equalTo: topAnchor),
+            subview.leadingAnchor.constraint(equalTo: leadingAnchor),
+            subview.trailingAnchor.constraint(equalTo: trailingAnchor),
+            subview.bottomAnchor.constraint(equalTo: bottomAnchor)
+        ])
     }
 }
